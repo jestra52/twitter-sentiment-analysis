@@ -17,7 +17,7 @@ fi
 for split in $TRAIN_DATA_DIR $TEST_DATA_DIR; do
     for sentiment in pos neg; do
         for file in $split/$sentiment/*; do
-            echo -e "Mergin \t $file \t in \t $RESULT_DIR/full_$(basename $split).txt"
+            echo -e "Merging \t $file \t in \t $RESULT_DIR/full_$(basename $split).txt"
             cat $file >> $RESULT_DIR/full_$(basename $split).txt
             echo >> $RESULT_DIR/full_$(basename $split).txt
         done
