@@ -16,15 +16,15 @@ fi
 
 for split in $TRAIN_DATA_DIR $TEST_DATA_DIR; do
     for sentiment in pos neg; do
-	echo 'text;;score' >> $RESULT_DIR/full_$(basename $split).csv
+	    # echo 'text;;score' >> $RESULT_DIR/full_$(basename $split).csv
 
         for file in $split/$sentiment/*; do
-	    score_with_fextension=$(basename $file | cut -d '_' -f 2)
-	    score=${score_with_fextension%.*}
-	   
-            echo -e "Merging \t $file \t in \t $RESULT_DIR/full_$(basename $split).csv"
-	    echo "$(cat $file);;$score" >> $RESULT_DIR/full_$(basename $split).csv
+            # score_with_fextension=$(basename $file | cut -d '_' -f 2)
+            # score=${score_with_fextension%.*}
+        
+            echo -e "Merging \t $file \t in \t $RESULT_DIR/full_$(basename $split).txt"
+            # echo "$(cat $file);;$score" >> $RESULT_DIR/full_$(basename $split).csv
+            echo $(cat $file) >> $RESULT_DIR/full_$(basename $split).txt
         done
     done
 done
-
