@@ -1,78 +1,16 @@
-from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.svm import LinearSVC
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
-import nltk
-import re
-import sys
+# packages
+import pickle
 
-# nltk.download('popular') # execute this only once
+review = 'Wow. #AvengersEndgame is staggering. It’s surprising in ways I never saw coming and satisfying in ways I didn’t realize I needed. It’s kind of the ultimate gift to fans of the MCU. It’s very long and has a few hiccups, but is everything you’re hoping for and more.'
 
-SPECIAL_CHARS_NO_SPACE = re.compile(r"[.;:!\'?,\"()\[\]]")
-SPECIAL_CHARS_WITH_SPACE = re.compile(r"(<br\s*/><br\s*/>)|(\-)|(\/)")
-TRAIN_FILE=sys.argv[1]
-TEST_FILE=sys.argv[2]
+tfidf_vectorizer = pickle.load(open('tfidf_model.pkl', 'rb'))
+svm = pickle.load(open('reviews_svm_model.pkl', 'rb'))
+mnb = pickle.load(open('reviews_mnb_model.pkl', 'rb'))
 
-train_tweets = open(TRAIN_FILE, 'r')
-test_tweets = open(TEST_FILE, 'r')
+review_vector = tfidf_vectorizer.transform([ review ])
+svm_review_result = 'Good movie' if svm.predict(review_vector)[0] == 1 else 'Bad movie'
+mnb_review_result = 'Good movie' if mnb.predict(review_vector)[0] == 1 else 'Bad movie'
 
-def preprocess_reviews(reviews):
-    reviews = [SPECIAL_CHARS_NO_SPACE.sub('', line.lower()) for line in reviews]
-    reviews = [SPECIAL_CHARS_WITH_SPACE.sub(' ', line) for line in reviews]
-    return reviews
-
-def clear_reviews(train, test):
-    train_reviews = []
-    test_reviews = []
-
-    for tweet in train:
-        train_reviews.append(tweet.strip())
-
-    for tweet in test:
-        test_reviews.append(tweet.strip())
-
-    return {
-        'clean_train_reviews': preprocess_reviews(train_reviews),
-        'clean_test_reviews': preprocess_reviews(test_reviews),
-    }
-
-def remove_stopwords(corpus):
-    eng_stopwords = stopwords.words('english')
-    removed_stopwords = []
-
-    for review in corpus:
-        removed_stopwords.append(' '.join([
-            word for word in review.split() if word not in eng_stopwords
-        ]))
-
-    return removed_stopwords
-
-clean_reviews = clear_reviews(train_tweets, test_tweets)
-clean_train_reviews = clean_reviews['clean_train_reviews']
-clean_test_reviews = clean_reviews['clean_test_reviews']
-train_reviews_with_no_sw = remove_stopwords(clean_train_reviews)
-test_reviews_with_no_sw = remove_stopwords(clean_test_reviews)
-
-tfidf_vectorizer = TfidfVectorizer()
-tfidf_vectorizer.fit(train_reviews_with_no_sw)
-X = tfidf_vectorizer.transform(train_reviews_with_no_sw)
-X_test = tfidf_vectorizer.transform(test_reviews_with_no_sw)
-
-target = [1 if i < len(train_reviews_with_no_sw)/2 else 0 for i in range(len(train_reviews_with_no_sw))]
-
-X_train, X_val, y_train, y_val = train_test_split(
-    X, target, train_size = 0.75
-)
-
-# Training
-for c in [0.01, 0.05, 0.25, 0.5, 1]:
-    svm = LinearSVC(C=c)
-    svm.fit(X_train, y_train)
-    score = accuracy_score(y_val, svm.predict(X_val))
-    print('Accuracy for C=%s: %s' % (c, score))
-
-final_model = LinearSVC(C=0.01)
-final_model.fit(X, target)
-score = accuracy_score(target, final_model.predict(X_test))
-print('Final accuracy: %s' % score)
+print('REVIEW:\n', review)
+print('Result with SVM:', svm_review_result)
+print('Result with Multinomial Naive-Bayes:', mnb_review_result)
