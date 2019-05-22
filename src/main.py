@@ -1,78 +1,54 @@
-from nltk.corpus import stopwords
+# packages
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
-import nltk
+import pickle
 import re
 import sys
+# Local packages
+from format_dataset import FormatDataset
 
-# nltk.download('popular') # execute this only once
+DATASET_DIR = sys.argv[1]
+N_GRAM = 2
 
-SPECIAL_CHARS_NO_SPACE = re.compile(r"[.;:!\'?,\"()\[\]]")
-SPECIAL_CHARS_WITH_SPACE = re.compile(r"(<br\s*/><br\s*/>)|(\-)|(\/)")
-TRAIN_FILE=sys.argv[1]
-TEST_FILE=sys.argv[2]
+format_ds = FormatDataset()
+train_tweets, test_tweets = format_ds.load_train_test_imdb_data(DATASET_DIR)
 
-train_tweets = open(TRAIN_FILE, 'r')
-test_tweets = open(TEST_FILE, 'r')
+print('TRAIN REVIEW TWEETS:\n', train_tweets.head(10), '\n')
+print('TEST REVIEW TWEETS:\n', test_tweets.head(10), '\n')
 
-def preprocess_reviews(reviews):
-    reviews = [SPECIAL_CHARS_NO_SPACE.sub('', line.lower()) for line in reviews]
-    reviews = [SPECIAL_CHARS_WITH_SPACE.sub(' ', line) for line in reviews]
-    return reviews
+# Transform each review into TF-IDF vector
+print('Cleaning and vectorizing reviews with n_gram size=%s...' % N_GRAM, '\n')
+vectorizer = TfidfVectorizer(
+    ngram_range=(1, N_GRAM),
+    preprocessor=format_ds.clear_text,
+    stop_words='english')
 
-def clear_reviews(train, test):
-    train_reviews = []
-    test_reviews = []
+training_features = vectorizer.fit_transform(train_tweets['text'])    
+test_features = vectorizer.transform(test_tweets['text'])
+print(test_features)
 
-    for tweet in train:
-        train_reviews.append(tweet.strip())
+# Training with SVM
+print('Training with SVM...\n')
+svm = LinearSVC()
+svm.fit(training_features, train_tweets['sentiment'])
 
-    for tweet in test:
-        test_reviews.append(tweet.strip())
+# Testing with SVM
+print('Testing with SVM...')
+y_pred_svm = svm.predict(test_features)
+acc_svm = accuracy_score(test_tweets['sentiment'], y_pred_svm)
+print('SCORE: %s' % (acc_svm * 100))
+print('CONFUSION MATRIX: \n', confusion_matrix(test_tweets['sentiment'], y_pred_svm), '\n')
 
-    return {
-        'clean_train_reviews': preprocess_reviews(train_reviews),
-        'clean_test_reviews': preprocess_reviews(test_reviews),
-    }
+# Training with MNB
+print('Training with Multinomial Naive-Bayes...\n')
+mnb = MultinomialNB()
+mnb.fit(training_features, train_tweets['sentiment'])
 
-def remove_stopwords(corpus):
-    eng_stopwords = stopwords.words('english')
-    removed_stopwords = []
-
-    for review in corpus:
-        removed_stopwords.append(' '.join([
-            word for word in review.split() if word not in eng_stopwords
-        ]))
-
-    return removed_stopwords
-
-clean_reviews = clear_reviews(train_tweets, test_tweets)
-clean_train_reviews = clean_reviews['clean_train_reviews']
-clean_test_reviews = clean_reviews['clean_test_reviews']
-train_reviews_with_no_sw = remove_stopwords(clean_train_reviews)
-test_reviews_with_no_sw = remove_stopwords(clean_test_reviews)
-
-tfidf_vectorizer = TfidfVectorizer()
-tfidf_vectorizer.fit(train_reviews_with_no_sw)
-X = tfidf_vectorizer.transform(train_reviews_with_no_sw)
-X_test = tfidf_vectorizer.transform(test_reviews_with_no_sw)
-
-target = [1 if i < len(train_reviews_with_no_sw)/2 else 0 for i in range(len(train_reviews_with_no_sw))]
-
-X_train, X_val, y_train, y_val = train_test_split(
-    X, target, train_size = 0.75
-)
-
-# Training
-for c in [0.01, 0.05, 0.25, 0.5, 1]:
-    svm = LinearSVC(C=c)
-    svm.fit(X_train, y_train)
-    score = accuracy_score(y_val, svm.predict(X_val))
-    print('Accuracy for C=%s: %s' % (c, score))
-
-final_model = LinearSVC(C=0.01)
-final_model.fit(X, target)
-score = accuracy_score(target, final_model.predict(X_test))
-print('Final accuracy: %s' % score)
+# Testing with MNB
+print('Testing with Multinomial Naive-Bayes...')
+y_pred_mnb = mnb.predict(test_features)
+acc_mnb = accuracy_score(test_tweets['sentiment'], y_pred_mnb)
+print('SCORE: %s' % (acc_mnb * 100))
+print('CONFUSION MATRIX: \n', confusion_matrix(test_tweets['sentiment'], y_pred_mnb), '\n')
