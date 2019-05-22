@@ -6,7 +6,6 @@ from sklearn.svm import LinearSVC
 import pickle
 import re
 import sys
-
 # Local packages
 from format_dataset import FormatDataset
 
