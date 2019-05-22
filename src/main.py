@@ -1,25 +1,16 @@
 # packages
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import accuracy_score, confusion_matrix
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.svm import LinearSVC
-import numpy as np
 import pickle
-# Local packages
-from format_dataset import FormatDataset
 
-format_ds = FormatDataset()
-loaded_vec = TfidfVectorizer(
-    vocabulary=pickle.load(open('reviews_tfidf_features.pkl', 'rb')))
+review = 'Wow. #AvengersEndgame is staggering. It’s surprising in ways I never saw coming and satisfying in ways I didn’t realize I needed. It’s kind of the ultimate gift to fans of the MCU. It’s very long and has a few hiccups, but is everything you’re hoping for and more.'
 
-print(loaded_vec)
+tfidf_vectorizer = pickle.load(open('tfidf_model.pkl', 'rb'))
+svm = pickle.load(open('reviews_svm_model.pkl', 'rb'))
+mnb = pickle.load(open('reviews_mnb_model.pkl', 'rb'))
 
-# svm = LinearSVC()
-# svm.fit(loaded_vec.get_feature_names(), loaded_vec.vocabulary)
+review_vector = tfidf_vectorizer.transform([ review ])
+svm_review_result = 'Good movie' if svm.predict(review_vector)[0] == 1 else 'Bad movie'
+mnb_review_result = 'Good movie' if mnb.predict(review_vector)[0] == 1 else 'Bad movie'
 
-# # Testing with SVM
-# print('Testing with SVM...')
-# y_pred_svm = svm.predict(docs_vec)
-# acc_svm = accuracy_score(test_tweets['sentiment'], y_pred_svm)
-# print('SCORE: %s' % (acc_svm * 100))
-# print('CONFUSION MATRIX: \n', confusion_matrix(test_tweets['sentiment'], y_pred_svm), '\n')
+print('REVIEW:\n', review)
+print('Result with SVM:', svm_review_result)
+print('Result with Multinomial Naive-Bayes:', mnb_review_result)
