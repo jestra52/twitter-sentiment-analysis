@@ -1,11 +1,14 @@
 # packages
 from flask import Flask, jsonify, make_response, request, redirect
+from flask_cors import CORS, cross_origin
 import pickle
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
+CORS(app)
 
-@app.route('/sentiment', methods=['GET', 'POST'])
+@app.route('/api/sentiment', methods=['GET', 'POST'])
+@cross_origin()
 def sentiment():
     if request.method == 'GET':
         review = request.args.get('review')
