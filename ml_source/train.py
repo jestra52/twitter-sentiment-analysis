@@ -23,9 +23,13 @@ print('TEST REVIEW TWEETS:\n', test_tweets.head(7),
 
 print('Cleaning and vectorizing reviews with n_gram size=%s...' % N_GRAM, '\n')
 tfidf_vectorizer = TfidfVectorizer(
+    max_df=0.8,
+    min_df=5,
     ngram_range=(1, N_GRAM),
     preprocessor=format_ds.clear_text,
-    stop_words='english')
+    stop_words='english',
+    sublinear_tf=True,
+    use_idf=True)
 
 print('Training tf/idf vectorizer...\n')
 tfidf = tfidf_vectorizer.fit(train_tweets['text'])
